@@ -1,0 +1,53 @@
+{
+  "properties": {
+    "@timestamp": {
+      "type": "date",
+      "format": "strict_date_optional_time||epoch_millis"
+    },
+    "@version": {
+      "type": "text"
+    },
+    "auth": {
+      "type": "text"
+    },
+    "bytes": {
+      "type": "integer"
+    },
+    "clientip": {
+      "type": "keyword"
+    },
+    "durationMs": {
+      "type": "integer"
+    },
+    "host": {
+      "type": "keyword"
+    },
+    "httpversion": {
+      "type": "keyword"
+    },
+    "ident": {
+      "type": "text"
+    },
+    "message": {
+      "type": "text"
+    },
+    "path": {
+      "type": "text"
+    },
+    "request": {
+      "type": "text"
+    },
+    "response": {
+      "type": "integer"
+    },
+    "timestamp": {
+      "type": "text"
+    },
+    "type": {
+      "type": "text"
+    },
+    "verb": {
+      "type": "keyword"
+    }
+  }
+}

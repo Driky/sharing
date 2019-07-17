@@ -1,0 +1,59 @@
+{
+    "order": 1,
+    "template": "logstash-*",
+    "settings": {
+      "index.number_of_replicas": "0",
+      "index.number_of_shards": "3"
+    },
+    "mappings": {
+      "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "dateOptionalTime"
+        },
+        "host": {
+          "type": "keyword"
+        },
+        "tags": {
+          "type": "keyword"
+        },
+        "type": {
+          "type": "keyword"
+        },
+        "bytes": {
+          "type": "integer"
+        },
+        "clientip": {
+          "type": "keyword"
+        },
+        "durationMs": {
+          "type": "integer"
+        },
+        "httpversion": {
+          "type": "keyword"
+        },
+        "response": {
+          "type": "integer"
+        },
+        "verb": {
+          "type": "keyword"
+        },
+        "level": {
+          "type": "keyword"
+        },
+        "correlationId": {
+          "type": "keyword"
+        },
+        "eventType": {
+          "type": "keyword"
+        },
+        "startTimestamp": {
+          "type": "date",
+          "format": "dateOptionalTime"
+        }
+      }
+    },
+    "aliases": {
+      "logstash": {}
+    }
+  }
