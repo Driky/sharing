@@ -1,0 +1,340 @@
+### Indexing documents 
+
+* Take the first `access.json` file's log object and index it in Elasticsearch `logs` index with `log` type
+
+	POST logs/doc
+	{
+	  "message": """127.0.0.1 - - [06/May/2015:11:20:42 +0200] "GET / HTTP/1.1" 200 1553 108""",
+	  "@version": "1",
+	  "@timestamp": "2015-05-06T09:20:42.000Z",
+	  "type": "doc",
+	  "host": "gqa-laptop",
+	  "path": "/media/OS/Work/Formation/formation-elk/Exercices/workspaces/logs/access_log.2015-05-06.log",
+	  "clientip": "127.0.0.1",
+	  "ident": "-",
+	  "auth": "-",
+	  "timestamp": "06/May/2015:11:20:42 +0200",
+	  "verb": "GET",
+	  "request": "/",
+	  "httpversion": "1.1",
+	  "response": "200",
+	  "bytes": "1553",
+	  "durationMs": "108"
+	}
+
+* Do it with two more log objects
+	
+	POST logs/doc
+	{
+	  "message": """127.0.0.1 - - [06/May/2015:11:20:42 +0200] "GET /angular-material.min.css HTTP/1.1" 200 158965 12""",
+	  "@version": "1",
+	  "@timestamp": "2015-05-06T09:20:42.000Z",
+	  "type": "access",
+	  "host": "gqa-laptop",
+	  "path": "/media/OS/Work/Formation/formation-elk/Exercices/workspaces/logs/access_log.2015-05-06.log",
+	  "clientip": "127.0.0.1",
+	  "ident": "-",
+	  "auth": "-",
+	  "timestamp": "06/May/2015:11:20:42 +0200",
+	  "verb": "GET",
+	  "request": "/angular-material.min.css",
+	  "httpversion": "1.1",
+	  "response": "200",
+	  "bytes": "158965",
+	  "durationMs": "12"
+	}
+	
+	
+	POST logs/doc
+	{
+	  "message": """127.0.0.1 - - [06/May/2015:11:20:42 +0200] "GET /main.css HTTP/1.1" 200 - 6""",
+	  "@version": "1",
+	  "@timestamp": "2015-05-06T09:20:42.000Z",
+	  "type": "access",
+	  "host": "gqa-laptop",
+	  "path": "/media/OS/Work/Formation/formation-elk/Exercices/workspaces/logs/access_log.2015-05-06.log",
+	  "clientip": "127.0.0.1",
+	  "ident": "-",
+	  "auth": "-",
+	  "timestamp": "06/May/2015:11:20:42 +0200",
+	  "verb": "GET",
+	  "request": "/main.css",
+	  "httpversion": "1.1",
+	  "response": "200",
+	  "durationMs": "6"
+}
+
+* Check the documents presence in the `logs` index and look at the answer detail
+
+	GET logs/_search
+
+* Observe the Elasticsearch generated `mapping` for the `logs` index and `log` type
+
+	GET logs/_mapping
+
+* Note that all is mapped as multi-fields mapping the initial field as text AND as keyword
+
+* Take a loot at the content format of the `application.bulk.json` file
+
+	> Note the paired JSON objest lines
+	>
+	> The first of the pair is a command for Elasticsearch
+	> The second is a document content
+
+* Use the `_bulk` api to index all the `application.bulk.json` logs (use the curl shell command) 
+
+	~/training/elastic-stack$ curl -H 'Content-Type: application/json' -XPOST localhost:9200/_bulk --data-binary  @tps/elasticsearch/resources/application.bulk.json
+
+* Check there really are some logs with an `application *type* field` in the `logs` index
+
+	GET logs/_search 
+
+	//There are 38 logs in the logs index, try using size to see them all in the result pane
+	GET logs/_search?size=38
+
+		> You should have *3* logs with type == `access`
+		> 
+		> You should have *35* logs with type == `application`
+
+* Observe the Elasticsearch generated `mapping` for the `log` type again and note the differences
+
+	GET logs/_mapping
+	
+		> Some fields have appeared with the dynamic mapping feature of Elasticsearch: message, logger, ...
+
+* Recreate the `logs` index from scratch
+
+	DELETE logs
+	
+	PUT logs
+	{
+	  "settings": {
+	    "number_of_replicas": 0,
+	    "number_of_shards": 2
+	  }
+	}
+
+
+* Add the `access.mapping.json` definition to the `logs` index 
+
+	# With curl
+	~/training/elastic-stack$ curl -H 'Content-Type: application/json' -XPOST localhost:9200/logs/_mapping/doc --data-binary  @tps/elasticsearch/resources/
+access.mapping.json
+
+
+* Observe the Elasticsearch new `mapping` for the `doc` type again and note the differences
+
+	> Some fields are now `integer`, some others are no more `multi-fields`
+
+* Ré-indexer des logs access et application
+
+	~/training/elastic-stack$ curl -H 'Content-Type: application/json' -XPOST localhost:9200/_bulk --data-binary  @tps/elasticsearch/resources/access.bulk.json
+
+	~/training/elastic-stack$ curl -H 'Content-Type: application/json' -XPOST localhost:9200/_bulk --data-binary  @tps/elasticsearch/resources/application.bulk.json
+
+
+
+### Rechercher des documents
+
+* Search for all `logs`
+
+	GET logs/_search
+
+		> You should have a total count of *46* logs
+
+
+* Search for all `application typed logs`
+
+	GET logs/_search?q=type:application
+
+		> You should have *35* logs with type == `application`
+
+
+* Search for all `access typed logs`
+
+	GET logs/_search?q=type:access
+ 
+		> You should have *11* logs with type == `access`
+
+
+* Search for `logs` containing the word `boot` with the `Lucene syntax`
+
+	GET logs/_search?q=boot
+
+		> You should find only two logs matching but why when the following command shows 10 matches ?
+		
+		In fact analyzer does not separate dot separated words but do when word is surrounded with `/`...
+		
+		You can test it with these _analyzer test commands 
+		
+		POST logs/_analyze 
+		{
+		  "field": "logger",
+		  "text":  "org.boot.com"
+		}
+		
+		POST logs/_analyze 
+		{
+		  "field": "message",
+		  "text":  "org.boot.com /home/boot/com"
+		}
+
+
+* Search for `logs` containing the words `spring boot` in their `message` field
+
+  - Write it with the `Lucene syntax`
+
+	GET logs/_search?q=message:spring%20boot
+
+  - Write it with the `JSON syntax`
+
+	POST logs/_search
+	{
+	  "query": {
+	    "query_string": {
+	      "query": "message:spring message:boot"
+	    }
+	  }
+	}
+
+  - Why do we find the log with the following message: *Initializing Spring embedded WebApplicationContext*?
+
+	> This is because by the default operator used with space separation is `or` operator
+
+  - How to get logs with both `spring` **and** `boot`?
+
+	//The best solution for the more common cases
+  POST logs/_search
+	{
+	  "query": {
+	    "query_string": {
+	      "query": "message:spring AND message:boot"
+	    }
+	  }
+	}
+
+	//Second solution is phrase search
+	GET logs/_search?q=message:"spring boot"
+
+	//Phrase search in JSON syntax
+  POST logs/_search
+	{
+	  "query": {
+	    "query_string": {
+	      "query": "message:\"spring boot\""
+	    }
+	  }
+	}
+
+	> Note seaching this way await terms to be ordered the same way as the search request to match
+	POST logs/_search
+	{
+	  "query": {
+	    "query_string": {
+	      "query": "message:\"boot spring\"" ==> 0 result
+	    }
+	  }
+	}
+
+	//Fuzzy phrase search works well
+	POST logs/_search
+	{
+	  "query": {
+	    "query_string": {
+	      "query": "message:\"boot spring\"~2" ==> 1 result
+	    }
+	  }
+	}
+
+        //Note that inserting inexistant term in the search phrase does not work anymore
+	POST logs/_search
+	{
+	  "query": {
+	    "query_string": {
+	      "query": "message:\"boot test spring\"~2" ==> 0 result
+	    }
+	  }
+	}
+
+* Search for `logs` in wich `@timestamp` is in this range : [ 2015-05-05, 2015-05-07 } and sort them with `ascending @timestamp`
+
+	//Lucene syntax
+	GET logs/_search?q=@timestamp:[2015-05-05 TO 2015-05-07}&sort=@timestamp:asc
+
+	//JSON syntax
+	POST logs/_search
+	{
+	  "query": {
+	    "range": {
+	      "@timestamp": {
+	        "gte": "2015-05-05",
+	        "lt": "2015-05-07"
+	      }
+	    }
+	  },
+	  "sort": [
+	    {
+	      "@timestamp": {
+	        "order": "asc"
+	      }
+	    }
+	  ]
+	}
+
+* Search for `logs` with an `info level` and a `message` field containing the word `Tomcat`
+
+	GET logs/_search?q=level:INFO AND message:Tomcat
+
+  - Pourquoi ne trouve-t-on rien avec la query
+
+	//When test the analyze process on the level field, we find that it is among other things lowercased
+	POST logs/_analyze 
+	{
+	  "field": "level",
+	  "text":  "INFO"
+	}
+
+		> term is a query without analyze process and so `INFO` is not lowercased as the indexed field has been...
+
+
+* Get an histogram of the durations(`durationMs` field) by a 10ms interval and compute the overall min/max/avg of this field.
+
+	POST logs/_search
+	{
+	  "size": 0,
+	  "aggregations": {
+	    "duration_stats": {
+	      "stats": {
+	        "field": "durationMs"
+	      }
+	    },
+	    "duration_histo": {
+	      "histogram": {
+	        "field": "durationMs",
+	        "interval": 10
+	      }
+	    }
+	  }
+	}
+
+* Optional : Give the average duration(`durationMs` field) of the `access typed logs` by response code (`response` field)
+
+	POST logs/_search
+	{
+	  "size": 0,
+	  "aggregations": {
+	    "response": {
+	      "terms": {
+	        "field": "response",
+	        "size": 10
+	      },
+	      "aggregations": {
+	        "duration_avg": {
+	          "avg": {
+	            "field": "durationMs"
+	          }
+	        }
+	      }
+	    }
+	  }
+	}
