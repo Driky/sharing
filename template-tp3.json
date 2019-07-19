@@ -1,0 +1,98 @@
+{
+  "agile-wake-up" : {
+    "order" : 0,
+    "index_patterns" : [
+      "agile-wake-up*"
+    ],
+    "settings" : {
+      "index" : {
+        "refresh_interval" : "5s"
+      }
+    },
+    "mappings" : {
+      "doc" : {
+        "dynamic_templates" : [
+          {
+            "message_field" : {
+              "path_match" : "message",
+              "mapping" : {
+                "norms" : false,
+                "type" : "text"
+              },
+              "match_mapping_type" : "string"
+            }
+          },
+          {
+            "string_fields" : {
+              "mapping" : {
+                "norms" : false,
+                "type" : "text",
+                "fields" : {
+                  "keyword" : {
+                    "type" : "keyword"
+                  }
+                }
+              },
+              "match_mapping_type" : "string",
+              "match" : "*"
+            }
+          }
+        ],
+        "properties" : {
+          "horodatage" : {
+            "format" : "epoch_millis",
+            "type" : "date"
+          },
+          "protocole-version" : {
+            "type" : "keyword"
+          },
+          "@timestamp" : {
+            "type" : "date"
+          },
+          "taille" : {
+            "type" : "long"
+          },
+          "geoip" : {
+            "dynamic" : true,
+            "properties" : {
+              "ip" : {
+                "type" : "ip"
+              },
+              "latitude" : {
+                "type" : "half_float"
+              },
+              "location" : {
+                "type" : "geo_point"
+              },
+              "longitude" : {
+                "type" : "half_float"
+              }
+            }
+          },
+          "stype" : {
+            "type" : "keyword"
+          },
+          "centralized-by" : {
+            "type" : "keyword"
+          },
+          "verbe" : {
+            "type" : "keyword"
+          },
+          "@version" : {
+            "type" : "keyword"
+          },
+          "protocole" : {
+            "type" : "keyword"
+          },
+          "dureeMs" : {
+            "type" : "long"
+          },
+          "status" : {
+            "type" : "long"
+          }
+        }
+      }
+    },
+    "aliases" : { }
+  }
+}
